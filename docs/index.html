@@ -5,11 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f6f4ed">
   <title>模型作品对照室 · 92 LAB</title>
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=3">
   <script src="data.js" defer></script>
+  <script src="collections/asc.js" defer></script>
   <script src="collections/sandworm.js" defer></script>
   <script src="collections/knots.js" defer></script>
-  <script src="app.js" defer></script>
+  <script src="collections/hy4.js" defer></script>
+  <script src="app.js?v=3" defer></script>
 </head>
 <body>
   <a class="skip-link" href="#archive">跳到作品库</a>
@@ -29,7 +31,7 @@
     <header class="intro">
       <div>
         <h1>模型作品对照室<span class="title-dot" aria-hidden="true">.</span></h1>
-        <p>选一道题，并排看不同模型交出的作品。</p>
+        <p>按评测组查看模型作品、同题对照与能力汇总。</p>
       </div>
       <dl class="collection-stats" aria-label="馆藏规模">
         <div><dt>组评测</dt><dd id="group-count"></dd></div>
@@ -60,7 +62,6 @@
           <button type="button" id="play" class="play-button"><span data-play-label>同步播放</span></button>
           <input id="timeline" type="range" min="0" max="100" step="0.1" value="0" aria-label="调整播放进度">
           <output id="time" aria-label="播放时间">00:00</output>
-          <button id="seek-cue" class="text-action" type="button" hidden></button>
         </div>
         <div class="viewer-actions">
           <button type="button" id="task-method" class="text-action">查看题面与方法</button>

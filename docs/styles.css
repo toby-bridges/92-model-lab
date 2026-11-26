@@ -178,9 +178,18 @@ dialog::backdrop { background: #191b176b; }
 .result-facts div { display:flex; gap:12px; justify-content:space-between; align-items:baseline; padding:8px 0; border-top:1px solid var(--line); }
 .result-facts dt { color:var(--secondary); }
 .result-facts dd { text-align:right; font-variant-numeric:tabular-nums; }
-.question-prompt { white-space:pre-wrap; font:inherit; }
 @media (max-width:560px) {
   #question-picker { gap:7px; } #question-label { width:100%; }
   #question-select { flex:1 1 160px; min-width:0; }
   .tab-mark { width:36px; height:36px; }
 }
+.summary-view { display:grid; gap:20px; grid-template-columns:minmax(0,1fr); }
+.summary-block { overflow-x:auto; background:var(--sheet); border:1px solid var(--line); border-radius:3px; }
+.summary-block table { width:100%; border-collapse:collapse; line-height:1.5; font-variant-numeric:tabular-nums; }
+.summary-block caption { padding:15px 17px; text-align:left; font-weight:750; font-size:19px; }
+.summary-block th,.summary-block td { border-top:1px solid var(--line); padding:9px 15px; text-align:right; }
+.summary-block th:first-child { text-align:left; }
+.summary-block thead { background:#eeeae1; }
+.summary-block th[scope=row] { font-weight:500; }
+.summary-note { padding:12px 15px; border-top:1px solid var(--line); font-size:14px; color:var(--secondary); }
+@media(max-width:560px){ .summary-block th,.summary-block td { padding:7px; font-size:13px; } }

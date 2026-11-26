@@ -24,12 +24,13 @@ for (const task of benchmarks) {
 }
 
 function chooseTask(task) {
-  moveView(task, view.mode, [...task.defaults]);
+  moveView(task, view.mode, [...(task.defaults || [])]);
 }
 
 function readView() {
   const [slug, mode, left, right] = location.hash.slice(1).split(':');
   const task = benchmarks.find(item => item.id === slug) || benchmarks.find(item => item.groupId === slug) || benchmarks[0];
+  if (task.type === 'summary') return {task, mode:'split', ids:[]};
   const isSample = id => task.samples.some(sample => sample.id === id);
   const a = isSample(left) ? left : task.defaults[0];
   let b = isSample(right) && right !== a ? right : task.defaults[1];
@@ -52,7 +53,7 @@ const gameResizer = new ResizeObserver(entries => {
   }
 });
 const videos = () => Array.from(byId('panels').querySelectorAll('video'));
-const viewHash = () => '#' + [view.task.id, view.mode, ...view.ids].join(':');
+const viewHash = () => view.task.type === 'summary' ? '#' + view.task.id : '#' + [view.task.id, view.mode, ...view.ids].join(':');
 
 function announce(message) {
   const notice = byId('notice');
@@ -84,7 +85,7 @@ function chooseSample(side, id) {
 function taskTabs() {
   const tabs = byId('tasks');
   byId('group-count').textContent = String(groups.size).padStart(2,'0');
-  byId('question-count').textContent = benchmarks.length;
+  byId('question-count').textContent = benchmarks.reduce((sum, item) => sum + (item.questionCount || 1), 0);
   tabs.replaceChildren(...Array.from(groups, ([name, items]) => {
     const task = items[0];
     const button = element('button', 'task-tab');
@@ -93,11 +94,13 @@ function taskTabs() {
     button.setAttribute('aria-pressed', String(active));
     if (active) button.classList.add('active', 'is-active');
     const thumb = items.find(item => item.thumb)?.thumb;
-    const image = thumb ? element('img') : element('i', 'tab-mark', '∿');
+    const image = thumb ? element('img') : element('i', 'tab-mark', 'Σ');
     if (thumb) { image.src = thumb; image.alt = ''; }
     else image.setAttribute('aria-hidden','true');
     const label = element('span');
-    label.append(element('strong', '', name), element('small', '', items.length > 1 ? items.length + ' 道题目' : task.category + ' · ' + task.samples.length + ' 份记录'));
+    const caption = task.type === 'summary' ? task.questionCount + ' 道题 · 汇总成绩' :
+      items.length > 1 ? items.length + ' 道题目' : task.category + ' · ' + task.samples.length + ' 份记录';
+    label.append(element('strong', '', name), element('small', '',caption));
     button.append(image, label);
     button.addEventListener('click', () => {
       if (!active) {
@@ -219,6 +222,29 @@ function makePanel(side) {
   return panel;
 }
 
+function summaryPanel(task) {
+  const content = element('article','summary-view');
+  for (const section of [task.summary, ...(task.otherTables || [])]) {
+    const figure = element('section','summary-block');
+    const table = element('table');
+    table.append(element('caption','',section.title || '汇总成绩'));
+    const head = table.createTHead().insertRow();
+    for (const col of section.columns) {
+      const th = element('th','',col); th.scope = 'col'; head.append(th);
+    }
+    const body = table.createTBody();
+    for (const values of section.rows) {
+      const row = body.insertRow();
+      const th = element('th','',values[0]); th.scope = 'row'; row.append(th);
+      for (const value of values.slice(1)) row.append(element('td','',value));
+    }
+    figure.append(table);
+    if (section.note) figure.append(element('p','summary-note',section.note));
+    content.append(figure);
+  }
+  return content;
+}
+
 function duration() { return view.task.duration || 8; }
 
 function setPlayLabel(playing) {
@@ -276,18 +302,19 @@ function render() {
   byId('task-title').textContent = task.name;
   byId('task-desc').textContent = task.description;
   const panels = byId('panels');
-  panels.dataset.mode = mode;
-  panels.classList.toggle('single', mode === 'single');
-  panels.replaceChildren(...(mode === 'split' ? [makePanel(0),makePanel(1)] : [makePanel(0)]));
+  const summary = task.type === 'summary';
+  panels.dataset.mode = summary ? 'single' : mode;
+  panels.classList.toggle('single', summary || mode === 'single');
+  document.querySelector('.mode-switch').hidden = summary;
+  if (summary) panels.replaceChildren(summaryPanel(task));
+  else panels.replaceChildren(...(mode === 'split' ? [makePanel(0),makePanel(1)] : [makePanel(0)]));
+  byId('task-method').textContent = summary ? '统计口径' : '查看题面与方法';
   for (const m of ['split','single']) {
     const control = byId(m);
     control.setAttribute('aria-pressed', String(m === mode));
     control.classList.toggle('active', m === mode);
   }
   const videoMode = videos().length > 0;
-  const cue = byId('seek-cue');
-  cue.hidden = !videoMode || !task.cue;
-  if (task.cue) cue.textContent = task.cue.label;
   for (const id of ['play','timeline','time']) byId(id).hidden = !videoMode;
   if (byId('playback')) byId('playback').hidden = !videoMode;
   byId('timeline').max = duration();
@@ -319,11 +346,6 @@ function openMethod() {
   byId('method-title').textContent = task.name + ' · 评测方法';
   if (task.method) {
     body.replaceChildren(...task.method.map(([title,text]) => group(title,text)));
-    if (task.prompt) {
-      const source = element('section');
-      source.append(element('h3','','原始题面'),element('pre','question-prompt',task.prompt));
-      body.append(source);
-    }
   } else if (task.id === 'pen-spinning') {
     body.replaceChildren(group('任务与条件','用 Sharpa Wave 官方右手资产，在 20 分钟内用 Three.js 做一次绕拇指转笔。11 份作业来自 9 个型号，包含同型号的独立运行，部分运行提前截断。'),
       group('如何比较','每份作品用同一流程重录为 8 秒视频。26 项技术检查衡量可运行性。原项目另有基于 16 张静帧的两轮匿名视觉评审。'),
@@ -367,9 +389,6 @@ async function shareView() {
 }
 
 byId('play').addEventListener('click', togglePlay);
-byId('seek-cue').addEventListener('click', () => {
-  if (view.task.cue) seek(view.task.cue.seconds);
-});
 byId('timeline').min = 0;
 byId('timeline').max = 8;
 byId('timeline').step = 0.01;
