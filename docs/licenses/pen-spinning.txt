@@ -1,0 +1,13 @@
+Copyright (c) 2026 李韭二 (X @li9292)
+
+Except for the third-party parts listed below, the contents of this repository (the page, README, videos,
+screencasts, article text and samples.json) are licensed under the Creative Commons Attribution 4.0
+International License (CC BY 4.0): https://creativecommons.org/licenses/by/4.0/
+Legal code: https://creativecommons.org/licenses/by/4.0/legalcode
+
+Attribution: 李韭二 (@li9292), https://toby-bridges.github.io/pen-spinning-benchmark/
+
+Third-party parts, under their own licences:
+- demo-h/vendor/right_sharpa_wave/: Sharpa Wave hand assets from sharpa-robotics/sharpa-urdf-usd-xml,
+  Apache License 2.0 (LICENSE.txt and NOTICE.txt in that directory).
+- demo-h/assets/: the built bundle includes three.js 0.186.0 (MIT) and urdf-loader 0.13.1 (Apache-2.0).

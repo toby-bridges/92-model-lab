@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f4ed">
+  <title>模型作品对照室 · 92 LAB</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="data.js" defer></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <a class="skip-link" href="#archive">跳到作品库</a>
+  <header class="masthead">
+    <div class="wrap masthead-inner">
+      <a class="brand" href="#archive" aria-label="92 LAB 作品库">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>92<span class="brand-lab">LAB</span></span>
+      </a>
+      <nav aria-label="主导航">
+        <a class="nav-current" href="#archive">作品库</a>
+        <button type="button" id="method-open">方法与来源</button>
+      </nav>
+    </div>
+  </header>
+  <main class="wrap" id="archive">
+    <header class="intro">
+      <div>
+        <h1>模型作品对照室<span class="title-dot" aria-hidden="true">.</span></h1>
+        <p>选一道题，并排看不同模型交出的作品。</p>
+      </div>
+      <dl class="collection-stats" aria-label="馆藏规模">
+        <div><dt>道任务</dt><dd>02</dd></div>
+        <div><dt>份作品</dt><dd>17</dd></div>
+      </dl>
+    </header>
+    <section class="task-shelf" aria-label="选择评测任务">
+      <div id="tasks" class="tasks"></div>
+    </section>
+    <section class="viewer" aria-labelledby="task-title">
+      <header class="viewer-head">
+        <div class="viewer-heading">
+          <h2 id="task-title">作品对照</h2>
+          <p id="task-desc"></p>
+        </div>
+        <div class="mode-switch" role="group" aria-label="视图模式">
+          <button type="button" id="split" aria-pressed="true"><i class="mode-icon mode-double" aria-hidden="true"></i>双栏对照</button>
+          <button type="button" id="single" aria-pressed="false"><i class="mode-icon" aria-hidden="true"></i>单件查看</button>
+        </div>
+      </header>
+      <div class="controls" aria-label="作品查看工具">
+        <div id="playback" class="playback">
+          <button type="button" id="play" class="play-button"><span data-play-label>同步播放</span></button>
+          <input id="timeline" type="range" min="0" max="100" step="0.1" value="0" aria-label="调整播放进度">
+          <output id="time" aria-label="播放时间">00:00</output>
+        </div>
+        <div class="viewer-actions">
+          <button type="button" id="task-method" class="text-action">查看题面与方法</button>
+          <button type="button" id="share" class="text-action">分享对照</button>
+        </div>
+      </div>
+      <div id="panels" class="panels" aria-label="作品预览"></div>
+    </section>
+  </main>
+  <dialog id="method" aria-labelledby="method-title">
+    <div class="dialog-top">
+      <h2 id="method-title">方法与来源</h2>
+      <button type="button" id="method-close" aria-label="关闭说明">关闭</button>
+    </div>
+    <div id="method-body" class="method-body"></div>
+  </dialog>
+  <div role="status" aria-live="polite" id="notice" class="notice"></div>
+  <noscript><p class="wrap">请启用 JavaScript 以选择任务和查看作品。</p></noscript>
+</body>
+</html>
