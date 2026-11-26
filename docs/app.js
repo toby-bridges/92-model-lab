@@ -16,9 +16,20 @@ function externalLink(label, href) {
   return link;
 }
 
+const groups = new Map();
+for (const task of benchmarks) {
+  const key = task.group || task.name;
+  if (!groups.has(key)) groups.set(key, []);
+  groups.get(key).push(task);
+}
+
+function chooseTask(task) {
+  moveView(task, view.mode, [...task.defaults]);
+}
+
 function readView() {
   const [slug, mode, left, right] = location.hash.slice(1).split(':');
-  const task = benchmarks.find(item => item.id === slug) || benchmarks[0];
+  const task = benchmarks.find(item => item.id === slug) || benchmarks.find(item => item.groupId === slug) || benchmarks[0];
   const isSample = id => task.samples.some(sample => sample.id === id);
   const a = isSample(left) ? left : task.defaults[0];
   let b = isSample(right) && right !== a ? right : task.defaults[1];
@@ -72,26 +83,51 @@ function chooseSample(side, id) {
 
 function taskTabs() {
   const tabs = byId('tasks');
-  tabs.replaceChildren(...benchmarks.map(task => {
+  byId('group-count').textContent = String(groups.size).padStart(2,'0');
+  byId('question-count').textContent = benchmarks.length;
+  tabs.replaceChildren(...Array.from(groups, ([name, items]) => {
+    const task = items[0];
     const button = element('button', 'task-tab');
     button.type = 'button';
-    const active = task === view.task;
+    const active = items.includes(view.task);
     button.setAttribute('aria-pressed', String(active));
     if (active) button.classList.add('active', 'is-active');
-    const image = element('img');
-    image.src = task.thumb;
-    image.alt = '';
+    const thumb = items.find(item => item.thumb)?.thumb;
+    const image = thumb ? element('img') : element('i', 'tab-mark', '∿');
+    if (thumb) { image.src = thumb; image.alt = ''; }
+    else image.setAttribute('aria-hidden','true');
     const label = element('span');
-    label.append(element('strong', '', task.name), element('small', '', task.category + ' · ' + task.samples.length + ' 份作品'));
+    label.append(element('strong', '', name), element('small', '', items.length > 1 ? items.length + ' 道题目' : task.category + ' · ' + task.samples.length + ' 份记录'));
     button.append(image, label);
     button.addEventListener('click', () => {
       if (!active) {
-        moveView(task, view.mode, [...task.defaults]);
+        chooseTask(task);
         byId('tasks').querySelector('[aria-pressed="true"]').focus({preventScroll:true});
       }
     });
     return button;
   }));
+  const items = groups.get(view.task.group || view.task.name);
+  byId('question-picker').hidden = items.length < 2;
+  if (items.length > 1) {
+    const select = byId('question-select');
+    select.replaceChildren();
+    const sections = new Map();
+    for (const item of items) {
+      if (!sections.has(item.category)) {
+        const optgroup = element('optgroup');
+        optgroup.label = item.category;
+        select.append(optgroup);
+        sections.set(item.category,optgroup);
+      }
+      sections.get(item.category).append(new Option(item.name,item.id));
+    }
+    select.value = view.task.id;
+    const index = items.indexOf(view.task);
+    byId('question-label').textContent = view.task.group + ' · 第 ' + (index + 1) + ' / ' + items.length + ' 题';
+    byId('previous-question').disabled = index === 0;
+    byId('next-question').disabled = index === items.length - 1;
+  }
 }
 
 function gamePreview(sample, screen) {
@@ -133,49 +169,74 @@ function makePanel(side) {
   select.addEventListener('change', () => chooseSample(side, select.value));
   header.append(element('span', 'slot', slot), select, element('span', 'meta', '样本 ' + sample.id));
   const screen = element('div', 'screen' + (task.type === 'game' ? ' is-game' : ''));
-  if (task.type === 'video') {
+  if (sample.video) {
     const video = element('video');
     video.muted = true;
     video.playsInline = true;
     video.preload = 'metadata';
-    video.poster = sample.poster;
+    if (sample.poster) video.poster = sample.poster;
     video.src = sample.video;
-    video.setAttribute('aria-label', sample.model + ' 转笔录像');
+    video.setAttribute('aria-label', sample.model + ' · ' + task.name + '录像');
     video.addEventListener('error', () => announce('这段录像未载入，可在来源页查看。'));
     screen.append(video);
-  } else {
+  } else if (task.type === 'game') {
     gamePreview(sample, screen);
+  } else if (sample.poster) {
+    const img = element('img');
+    img.alt = sample.model + ' · ' + task.name + '作品画面';
+    img.src = sample.poster;
+    screen.append(img);
+  } else {
+    screen.classList.add('result-screen');
+    screen.append(element('strong','', sample.headline || sample.metric || '评测记录'),
+      element('span','',sample.note || '本题以逐项成绩展示。'));
   }
   const footer = element('div', 'panel-foot');
-  if (task.type === 'video') {
+  if (task.id === 'pen-spinning') {
     footer.append(element('span', '', sample.runner + ' · ' + sample.elapsed), element('span', '', '技术检查 ' + sample.checks));
     footer.title = sample.condition;
     if (sample.condition !== '完整运行，自行结束') {
       const status = element('small', 'sample-condition', sample.condition);
       footer.firstChild.append(document.createElement('br'), status);
     }
-  } else {
+  } else if (task.type === 'game') {
     footer.append(element('span', '', '方向键移动 · 空格射击'), externalLink('独立试玩', sample.demo));
+  } else {
+    if (sample.label) footer.append(element('span','',sample.label));
+    if (sample.metric && (sample.video || sample.poster || sample.headline)) footer.append(element('span','',sample.metric));
   }
-  panel.append(header, screen, footer);
+  panel.append(header, screen);
+  if (footer.childElementCount) panel.append(footer);
+  if (sample.facts?.length) {
+    const table = element('dl','result-facts');
+    for (const [key,value] of sample.facts) {
+      const row = element('div');
+      row.append(element('dt','',key),element('dd','',value));
+      table.append(row);
+    }
+    panel.append(table);
+  }
   return panel;
 }
 
+function duration() { return view.task.duration || 8; }
+
 function setPlayLabel(playing) {
   const play = byId('play');
-  const label = playing ? '暂停' : (clock >= 7.99 ? '重播' : (view.mode === 'split' ? '同步播放' : '播放'));
+  const paired = videos().length === 2;
+  const label = playing ? '暂停' : (clock >= duration() - 0.01 ? '重播' : (paired ? '同步播放' : '播放'));
   const text = play.querySelector('[data-play-label]');
   if (text) text.textContent = label;
   else play.textContent = (playing ? 'Ⅱ ' : '▶ ') + label;
   play.setAttribute('aria-pressed', String(playing));
-  play.setAttribute('aria-label', label + (view.mode === 'split' ? '两段录像' : '录像'));
+  play.setAttribute('aria-label', label + (paired ? '两段录像' : '录像'));
 }
 
 function showTime(value) {
-  clock = Math.min(8, Math.max(0, value));
+  clock = Math.min(duration(), Math.max(0, value));
   byId('timeline').value = clock;
-  byId('timeline').style.setProperty('--progress', (clock / 8 * 100) + '%');
-  byId('time').textContent = clock.toFixed(1) + ' / 8.0 s';
+  byId('timeline').style.setProperty('--progress', (clock / duration() * 100) + '%');
+  byId('time').textContent = clock.toFixed(1) + ' / ' + duration().toFixed(1) + ' s';
 }
 
 function seek(value) {
@@ -196,7 +257,7 @@ async function togglePlay() {
   const players = videos();
   if (!players.length) return;
   if (players.some(player => !player.paused)) { stopPlayers(); return; }
-  if (clock >= 7.95) seek(0);
+  if (clock >= duration() - 0.05) seek(0);
   else seek(clock);
   const request = ++playRequest;
   try {
@@ -223,9 +284,13 @@ function render() {
     control.setAttribute('aria-pressed', String(m === mode));
     control.classList.toggle('active', m === mode);
   }
-  const videoMode = task.type === 'video';
+  const videoMode = videos().length > 0;
+  const cue = byId('seek-cue');
+  cue.hidden = !videoMode || !task.cue;
+  if (task.cue) cue.textContent = task.cue.label;
   for (const id of ['play','timeline','time']) byId(id).hidden = !videoMode;
   if (byId('playback')) byId('playback').hidden = !videoMode;
+  byId('timeline').max = duration();
   showTime(0);
   setPlayLabel(false);
   if (videoMode) {
@@ -238,7 +303,7 @@ function render() {
         }
       }
     });
-    players[0].addEventListener('ended', () => { seek(8); stopPlayers(); });
+    players[0].addEventListener('ended', () => { seek(duration()); stopPlayers(); });
   }
   document.title = task.name + ' · 模型作品对照室';
 }
@@ -252,7 +317,14 @@ function openMethod() {
     return section;
   };
   byId('method-title').textContent = task.name + ' · 评测方法';
-  if (task.type === 'video') {
+  if (task.method) {
+    body.replaceChildren(...task.method.map(([title,text]) => group(title,text)));
+    if (task.prompt) {
+      const source = element('section');
+      source.append(element('h3','','原始题面'),element('pre','question-prompt',task.prompt));
+      body.append(source);
+    }
+  } else if (task.id === 'pen-spinning') {
     body.replaceChildren(group('任务与条件','用 Sharpa Wave 官方右手资产，在 20 分钟内用 Three.js 做一次绕拇指转笔。11 份作业来自 9 个型号，包含同型号的独立运行，部分运行提前截断。'),
       group('如何比较','每份作品用同一流程重录为 8 秒视频。26 项技术检查衡量可运行性。原项目另有基于 16 张静帧的两轮匿名视觉评审。'),
       group('素材署名','录像与原海报来自李韭二（@li9292），使用 CC BY 4.0 许可。本站将海报转换为 WebP，并增加双栏同步播放器。'));
@@ -262,13 +334,14 @@ function openMethod() {
       group('素材署名','游戏来自 toby-bridges 的六模型对照项目，MIT 许可。本站海报截自对应游戏的实际画面，试玩从原项目加载。'));
   }
   const links = element('div','source-links');
-  const license = element('a','', '许可文本');
-  license.href = task.type === 'video' ? 'licenses/pen-spinning.txt' : 'licenses/invaders.txt';
-  license.target = '_blank';
-  license.rel = 'noopener';
-  links.append(externalLink('原始画廊', task.source), externalLink('固定版本源码', task.repo), license);
+  if (task.source) links.append(externalLink('原始画廊', task.source));
+  if (task.repo) links.append(externalLink('固定版本源码', task.repo));
+  if (task.id === 'pen-spinning' || task.id === 'space-invaders') {
+    links.append(externalLink('许可文本', task.type === 'video' ? 'licenses/pen-spinning.txt' : 'licenses/invaders.txt'));
+  }
+  for (const item of task.links || []) links.append(externalLink(item.label, item.href));
   if (task.type === 'game') links.append(externalLink('题目来源','https://space-invaders.simonwillison.net/'));
-  body.append(links);
+  if (links.childElementCount) body.append(links);
   const dialog = byId('method');
   if (!dialog.open) dialog.showModal();
 }
@@ -294,10 +367,23 @@ async function shareView() {
 }
 
 byId('play').addEventListener('click', togglePlay);
+byId('seek-cue').addEventListener('click', () => {
+  if (view.task.cue) seek(view.task.cue.seconds);
+});
 byId('timeline').min = 0;
 byId('timeline').max = 8;
 byId('timeline').step = 0.01;
 byId('timeline').addEventListener('input', e => seek(Number(e.target.value)));
+byId('question-select').addEventListener('change', e => {
+  chooseTask(benchmarks.find(task => task.id === e.target.value));
+});
+for (const [control, delta] of [['previous-question',-1],['next-question',1]]) {
+  byId(control).addEventListener('click', () => {
+    const items = groups.get(view.task.group);
+    const target = items?.[items.indexOf(view.task) + delta];
+    if (target) chooseTask(target);
+  });
+}
 for (const mode of ['split','single']) byId(mode).addEventListener('click', () => {
   if (view.mode !== mode) moveView(view.task, mode, [...view.ids]);
 });

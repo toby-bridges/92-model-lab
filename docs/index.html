@@ -7,6 +7,8 @@
   <title>模型作品对照室 · 92 LAB</title>
   <link rel="stylesheet" href="styles.css">
   <script src="data.js" defer></script>
+  <script src="collections/sandworm.js" defer></script>
+  <script src="collections/knots.js" defer></script>
   <script src="app.js" defer></script>
 </head>
 <body>
@@ -30,12 +32,17 @@
         <p>选一道题，并排看不同模型交出的作品。</p>
       </div>
       <dl class="collection-stats" aria-label="馆藏规模">
-        <div><dt>道任务</dt><dd>02</dd></div>
-        <div><dt>份作品</dt><dd>17</dd></div>
+        <div><dt>组评测</dt><dd id="group-count"></dd></div>
+        <div><dt>道题目</dt><dd id="question-count"></dd></div>
       </dl>
     </header>
     <section class="task-shelf" aria-label="选择评测任务">
       <div id="tasks" class="tasks"></div>
+      <div id="question-picker" hidden>
+        <label for="question-select" id="question-label">选择题目</label>
+        <select id="question-select"></select>
+        <div class="stepper"><button type="button" id="previous-question" aria-label="上一题">上一题</button><button type="button" id="next-question" aria-label="下一题">下一题</button></div>
+      </div>
     </section>
     <section class="viewer" aria-labelledby="task-title">
       <header class="viewer-head">
@@ -53,6 +60,7 @@
           <button type="button" id="play" class="play-button"><span data-play-label>同步播放</span></button>
           <input id="timeline" type="range" min="0" max="100" step="0.1" value="0" aria-label="调整播放进度">
           <output id="time" aria-label="播放时间">00:00</output>
+          <button id="seek-cue" class="text-action" type="button" hidden></button>
         </div>
         <div class="viewer-actions">
           <button type="button" id="task-method" class="text-action">查看题面与方法</button>
