@@ -4,7 +4,7 @@ benchmarks.push({
   category: '字符动画',
   type: 'summary',
   questionCount: 1,
-  description: '模型根据给定约束，用代码实现字符动画。A 模式允许模型在作答过程中运行代码并自行检查和修改。',
+  description: '字符动画能力评测，汇总 6 个型号的 8 份有效作答。',
   summary: {
     columns: ['指标', '汇总结果'],
     rows: [
@@ -15,7 +15,6 @@ benchmarks.push({
     ],
   },
   method: [
-    ['作答方式', '每次作答只给一次任务说明，模型随后在工作区独立完成。'],
     ['统计口径', '汇总计入按协议正常完成的 A 模式作答，统计单位为答卷。同一型号可以有多份答卷。'],
   ],
   links: [],
